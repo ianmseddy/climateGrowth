@@ -16,7 +16,7 @@ inSim <- SpaDES.project::setupProject(
     "terra" # "leaflet", "tidyterra",
   ), # for StudyArea visualization below
   require = c("reproducible", "usethis"),
-  useGit = TRUE,
+  useGit = "ianmseddy@gmail.com",
   times = list(start = 2011, end = 2012),
   options = list(# gargle_oauth_email = "predictiveecology@gmail.com",
     # gargle_oauth_cache = ".secret",
@@ -53,7 +53,7 @@ inSim <- SpaDES.project::setupProject(
       minTrees = 15,
       minDBH = 5,
       PSPperiod = c(1920, 2020), 
-      climateVariables = c("ATA" = "MAT", "ACMI" = "CMI", "CMI_sm", "CMI_sp", "AMAP" = "MAP", "PPT_sm", "PPT_sp", "Tave_sp")
+      climateVariables = c("ATA" = "MAT", "ACMI" = "CMI", "CMI_sm", "CMI_sp", "AMAP" = "MAP", "PPT_sm", "PPT_sp", "Tave_sp", "Tave_sm")
     )
   )
 )
