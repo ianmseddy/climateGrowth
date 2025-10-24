@@ -19,11 +19,8 @@ inSim <- SpaDES.project::setupProject(
   useGit = "ianmseddy@gmail.com",
   times = list(start = 2011, end = 2012),
   options = list(# gargle_oauth_email = "predictiveecology@gmail.com",
-    # gargle_oauth_cache = ".secret",
-    # gargle_oauth_client_type = "web", # for command line
     "~/googledriveAuthentication.R", # has the above lines; each user can create their own file
-    spades.allowInitDuringSimInit = FALSE, # TRUE
-    # reproducible.gdalwarp = TRUE,
+    # spades.allowInitDuringSimInit = FALSE, 
     repos = unique(c("predictiveecology.r-universe.dev", 'https://dmlc.r-universe.dev', getOption("repos"))),
     spades.moduleCodeChecks = FALSE,
     Require.cloneFrom = Sys.getenv("R_LIBS_USER"),
@@ -53,7 +50,9 @@ inSim <- SpaDES.project::setupProject(
       minTrees = 15,
       minDBH = 5,
       PSPperiod = c(1920, 2020), 
-      climateVariables = c("ATA" = "MAT", "ACMI" = "CMI", "CMI_sm", "CMI_sp", "AMAP" = "MAP", "PPT_sm", "PPT_sp", "Tave_sp", "Tave_sm")
+      climateVariables = c("ATA" = "MAT", "ACMI" = "CMI", "CMI_sm", "CMI_sp", 
+                           "AMAP" = "MAP", "PPT_sm", "PPT_sp", "Tave_sp", "Tave_sm")
+      #named vector indicates "anomaly" - both are added to gpboost
     )
   )
 )
