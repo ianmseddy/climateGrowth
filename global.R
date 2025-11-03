@@ -11,7 +11,7 @@ setwd(projectDir)
 inSim <- SpaDES.project::setupProject(
   modules = c("ianmseddy/gmcsDataPrep@development"),
   packages = c(
-    "PredictiveEcology/reproducible@AI (>= 2.1.2.9063)", 
+    "PredictiveEcology/reproducible@AI (>= 2.1.2.9072)", 
     "PredictiveEcology/SpaDES.core@box (>= 2.1.8.9002)", 
     "terra" # "leaflet", "tidyterra",
   ), # for StudyArea visualization below
@@ -30,7 +30,7 @@ inSim <- SpaDES.project::setupProject(
     saPSP <- reproducible::prepInputs(url = "https://sis.agr.gc.ca/cansis/nsdb/ecostrat/province/ecoprovince_shp.zip", 
                                       destinationPath = paths$inputPath, 
                                       fun = "terra::vect")
-    saPSP <- saPSP[saPSP$ECOPROVINC == "6.2",]
+    saPSP <- saPSP[saPSP$ECOPROVINC == "14.1",] #6.2 Quebec and Ontario
   },
   sppEquiv = {
     species <- LandR::speciesInStudyArea(studyArea = studyAreaPSP, dPath = paths$inputPath)
@@ -48,7 +48,7 @@ inSim <- SpaDES.project::setupProject(
       minCoverThreshold = 0), 
     gmcsDataPrep = list(
       minTrees = 15,
-      minDBH = 5,
+      minDBH = 7, #7 for BC
       PSPperiod = c(1920, 2020), 
       climateVariables = c("ATA" = "MAT", "ACMI" = "CMI", "CMI_sm", "CMI_sp", 
                            "AMAP" = "MAP", "PPT_sm", "PPT_sp", "Tave_sp", "Tave_sm")
@@ -56,8 +56,8 @@ inSim <- SpaDES.project::setupProject(
     )
   )
 )
-
-Require::Require("gpboost", repos="https://cran.r-project.org")  # needed for the functions 
+# 
+# Require::Require("gpboost", repos="https://cran.r-project.org")  # needed for the functions 
 
 out <- SpaDES.core::simInitAndSpades2(inSim)
 
