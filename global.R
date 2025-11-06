@@ -16,7 +16,7 @@ inSim <- SpaDES.project::setupProject(
     "terra" # "leaflet", "tidyterra",
   ), # for StudyArea visualization below
   require = c("reproducible", "usethis"),
-  useGit = "ianmseddy@gmail.com",
+  useGit = "ianmseddy",
   times = list(start = 2011, end = 2012),
   options = list(# gargle_oauth_email = "predictiveecology@gmail.com",
     "~/googledriveAuthentication.R", # has the above lines; each user can create their own file
@@ -26,11 +26,13 @@ inSim <- SpaDES.project::setupProject(
     Require.cloneFrom = Sys.getenv("R_LIBS_USER"),
     reproducible.inputPaths = "~/data"
   ),
+  studyArea = LandR::randomStudyArea(size = 1e8), #I just want the CRS
   studyAreaPSP = {
-    saPSP <- reproducible::prepInputs(url = "https://sis.agr.gc.ca/cansis/nsdb/ecostrat/province/ecoprovince_shp.zip", 
+    saPSP <- reproducible::prepInputs(url = "https://sis.agr.gc.ca/cansis/nsdb/ecostrat/zone/ecozone_shp.zip", 
                                       destinationPath = paths$inputPath, 
-                                      fun = "terra::vect")
-    saPSP <- saPSP[saPSP$ECOPROVINC == "14.1",] #6.2 Quebec and Ontario
+                                      fun = "terra::vect", 
+                                      projectTo = studyArea)
+    saPSP <- saPSP[saPSP$ZONE_NAME == "Montane cordillera",] #6.2 Quebec and Ontario
   },
   sppEquiv = {
     species <- LandR::speciesInStudyArea(studyArea = studyAreaPSP, dPath = paths$inputPath)
@@ -47,11 +49,12 @@ inSim <- SpaDES.project::setupProject(
       .useCache = c(".inputObjects"),
       minCoverThreshold = 0), 
     gmcsDataPrep = list(
-      minTrees = 15,
+      minTrees = 12,
+      minMeasures = 2,
       minDBH = 7, #7 for BC
       PSPperiod = c(1920, 2020), 
-      climateVariables = c("ATA" = "MAT", "ACMI" = "CMI", "CMI_sm", "CMI_sp", 
-                           "AMAP" = "MAP", "PPT_sm", "PPT_sp", "Tave_sp", "Tave_sm")
+      climateVariables = c("ATA" = "MAT", "ACMI" = "CMI", "ACMI_sm" = "CMI_sm", "CMI_sp", 
+                           "AMAP" = "MAP", "PPT_sm", "PPT_sp", "ADD_0" = "DD_0", "ADD1040" = "DD1040")
       #named vector indicates "anomaly" - both are added to gpboost
     )
   )
@@ -61,4 +64,7 @@ inSim <- SpaDES.project::setupProject(
 
 out <- SpaDES.core::simInitAndSpades2(inSim)
 
+
+# compare with glmmPQL
+# compare 
 

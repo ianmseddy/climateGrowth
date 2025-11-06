@@ -3,35 +3,39 @@ library(data.table) # Keep data.table if the original code relies on its syntax
 library(fastshap)
 library(shapviz)
 
+#TODO: combine poplars?
+
 climateVariables <- P(sim)$climateVariables
 PSPmodelData <- sim$PSPmodelData
 PSPvalidationData <- sim$PSPvalidationData
 
 anoms <- setdiff(names(climateVariables), "")
-
+allClim <- c(climateVariables, anoms)
 
 xgb_PSP <- function(trainingData = PSPmodelData,
                     validationData = PSPvalidationData,
                     stat, climVar = c(climateVariables, anoms)) {
   #------------------------------------------------------------
   ## 1. Prepare Data for XGBoost
-  
+
   # Columns for the predictor matrix X
-  xgbXCols <- c(climateVariables, anoms, "biomass", "logAge")
+  xgbXCols <- c(climateVariables, anoms, "biomass", "logAge", "standBiomass", "psp_spp")
+  #TODO: delete this maybe
+  #psp_sppKey <- trainingData[, .(asInt = as.integer(psp_spp)), .(psp_spp)]
   
   # Training data
-  myX <- as.matrix(trainingData[, .SD, .SDcols = xgbXCols])
+  myX <- data.matrix(trainingData[, .SD, .SDcols = xgbXCols])
   myY <- trainingData[[stat]]
   
   # Validation data
-  validX <- as.matrix(validationData[, .SD, .SDcols = xgbXCols])
+  validX <- data.matrix(validationData[, .SD, .SDcols = xgbXCols])
   validY <- validationData[[stat]]
   
   #------------------------------------------------------------
   ## 2. Create xgb.DMatrix datasets
   
   # xgboost uses xgb.DMatrix objects for efficient handling
-  dtrain <- xgb.DMatrix(data = myX, label = myY)
+  dtrain <- xgb.DMatrix(data = as.matrix(myX), label = myY)
   dvalid <- xgb.DMatrix(data = validX, label = validY)
   
   # Define the watchlist for evaluation and early stopping
@@ -40,8 +44,8 @@ xgb_PSP <- function(trainingData = PSPmodelData,
   #------------------------------------------------------------
   ## 3. Specify Parameters
   etas <- seq(0.03, 0.08, 0.0025)
-  min_weights <- seq(1, 11, 2)
-  depths <- seq(3, 10, 1)
+  min_weights <- seq(1, 5, 1)
+  depths <- seq(5, 10, 1)
   hyperparams_Full <- expand.grid(etas, min_weights, depths) |>
     as.data.table() |>
     setnames(new = c("eta", "min_weight", "depth")) |>
@@ -51,12 +55,16 @@ xgb_PSP <- function(trainingData = PSPmodelData,
   hyperparam_1 <- hyperparams_Full[, .(min_weight = round(mean(min_weight)), 
                                        depth = round(mean(depth))), 
                                    .(eta)]
+  
   tune_xgb <- function(i, hyperparam, train = dtrain, valid = dvalid, 
                        wl = watchlist, returnBST = FALSE) {
     hyperparam <- hyperparam[i,]
     # Use 'reg:squarederror' for L2 regression in xgboost
     params <- list(
       objective = "reg:squarederror",
+      lambda = 0.1,
+      tree_method = "hist",
+      enable_categorical = TRUE,
       eval_metric = "rmse" # Often used for regression in XGBoost
     )
     
@@ -68,6 +76,7 @@ xgb_PSP <- function(trainingData = PSPmodelData,
     bst <- xgb.train(
       params = params,
       data = train,
+      enable_categorical = TRUE,
       evals = wl,
       nrounds = 500,
       early_stopping_rounds = 25,
@@ -94,6 +103,9 @@ xgb_PSP <- function(trainingData = PSPmodelData,
   tuning1_best <- tuning1[best_score == min(best_score)]$eta
   #run with other params
   hyperparam_2 <- hyperparams_Full[eta == tuning1_best]
+  
+  browser() #verify whether params are correctedly passed in tuning2
+  
   tuning2 <- lapply(X = 1:nrow(hyperparam_2), hyperparam = hyperparam_2, FUN = tune_xgb)
   tuning2 <- lapply(tuning2, as.data.table) |>
     rbindlist()
@@ -125,15 +137,20 @@ xgb_PSP <- function(trainingData = PSPmodelData,
   
   # Prediction with fixed effects only (standard XGBoost prediction)
   pred_fixed <- predict(bst, validX, iterationrange = c(1, best_iter))
+  
+  #TODO: calculate loglikelihood 
   temp <- copy(validationData)
   temp[, pred := pred_fixed]
   x_sym <- sym(stat)
+  
   predPlot <- ggplot(temp, aes(y = pred, x = !!x_sym, col = standAge)) + 
     labs(title = "XGBoost Prediction",
          x = paste("observed", stat), 
          y = paste("predicted", stat)) + 
     geom_point() + 
-    geom_abline(intercept = 0, slope = 1)
+    geom_smooth(method = "lm", linetype = "dashed", col = "red", se = FALSE) + 
+    geom_abline(intercept = 0, slope = 1) + 
+    theme_bw()
   
   # The summary(gp_model) is removed as there is no random effect model
   # Calculate SHAP values for the validation data.
@@ -142,7 +159,7 @@ xgb_PSP <- function(trainingData = PSPmodelData,
 
   shap_matrix <- fastshap::explain(object = bst, X = myX, 
                     pred_wrapper = function(object, newdata){predict(object, newdata = newdata)}, 
-                    newdata = as.matrix(trainingData[, .SD, .SDcols = xgbXCols]))
+                    newdata = data.matrix(trainingData[, .SD, .SDcols = xgbXCols]))
   
   # The shapviz function takes the SHAP matrix and the original feature data.
   s_viz <- shapviz::shapviz(
@@ -153,9 +170,12 @@ xgb_PSP <- function(trainingData = PSPmodelData,
   # Calculate mean absolute SHAP value for each feature
   beeswarm_plot <- sv_importance(s_viz, 
                                  kind = "bee")
-  
-  
-  return(bst, beeswarm_plot)
+
+  return(list(bst = bst, 
+              shapplot = beeswarm_plot, 
+              predplot = predPlot, 
+              tune1 = tuning1, 
+              tune2 = tuning2))
 }
 
 
