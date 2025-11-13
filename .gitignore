@@ -12,3 +12,4 @@ outputs
 .httr-oauth
 .DS_Store
 .quarto
+pkgs/
