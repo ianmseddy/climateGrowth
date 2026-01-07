@@ -10,3 +10,6 @@
 [submodule "modules/canClimateData"]
 	path = modules/canClimateData
 	url = https://github.com/PredictiveEcology/canClimateData
+[submodule "modules/climateYear"]
+	path = modules/climateYear
+	url = https://github.com/PredictiveEcology/climateYear
