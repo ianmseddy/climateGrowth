@@ -12,7 +12,6 @@ ecodistrictNumber <- 986
 climateVarsForGMCS <- c("a_MAT" = "MAT", "a_MAP" = "MAP", #"a_MSP" = "MSP", #"a_FFP" = "FFP"
                         "a_DD5" = "DD5", "aDD_0" = "DD_0", "a_CMI" = "CMI", "a_AHM" = "AHM")
 
-
 inSim <- SpaDES.project::setupProject(
   paths = list(inputPath = "inputs", 
                outputPath = "outputs", 
@@ -69,8 +68,8 @@ inSim <- SpaDES.project::setupProject(
     sppEquiv <- LandR::sppEquivalencies_CA[LandR %in% species$speciesList,]
     sppEquiv[LANDIS_traits != "",] #Popu bal and popu tre are just "aspen"
   },
-  climateVariables = c(makeClimateVariablesForModule(unname(climateVarsForGMCS), type= "forecast", years = 2020:2050),
-                       makeClimateVariablesForModule(unname(climateVarsForGMCS), type = "hindcast", 
+  climateVariables = c(makeClimateVariablesForModule(unname(climateVarsForGMCS), type= "projected", years = 2020:2050),
+                       makeClimateVariablesForModule(unname(climateVarsForGMCS), type = "historical", 
                                                      years = "1951_1980", yearType = "historical_period")
                        # below was to confirm if things were working for Alex?
                        # , makeClimateVariablesForModule(unname(climateVarsForGMCS), type = "hindcast", years = 2021:2023)
@@ -100,8 +99,6 @@ inSim <- SpaDES.project::setupProject(
     )
   )
 )
-
-
 
 pkgload::load_all("modules/gmcsDataPrep/pkgs/caret/pkg/caret") 
 pkgload::load_all("../LandR.CS")
