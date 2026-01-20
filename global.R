@@ -9,8 +9,7 @@ projectDir <- getwd()
 ecozoneName <- "Montane Cordillera" #for studyAreaPSP
 ecodistrictName <- "Fraser_Basin" #for studyArea
 ecodistrictNumber <- 986
-climateVarsForGMCS <- c("a_MAT" = "MAT", "a_MAP" = "MAP", #"a_MSP" = "MSP", #"a_FFP" = "FFP"
-                        "a_DD5" = "DD5", "aDD_0" = "DD_0", "a_CMI" = "CMI", "a_AHM" = "AHM")
+
 
 inSim <- SpaDES.project::setupProject(
   paths = list(inputPath = "inputs", 
@@ -74,9 +73,15 @@ inSim <- SpaDES.project::setupProject(
                        # below was to confirm if things were working for Alex?
                        # , makeClimateVariablesForModule(unname(climateVarsForGMCS), type = "hindcast", years = 2021:2023)
                        ), 
-  cceArgs = list(quote(projectedClimateRasters), 
+  climateVariablesForGMCS = climateVarsForGMCS <- c("a_MAT" = "MAT", "a_MAP" = "MAP", 
+                                                    #"a_MSP" = "MSP", #"a_FFP" = "FFP"
+                                                    "a_DD5" = "DD5", "aDD_0" = "DD_0", 
+                                                    "a_CMI" = "CMI", "a_AHM" = "AHM"),
+  cceArgs = list(quote(projectedClimateRasters),
+                 quote(historicalClimateRasters),#need for normals 
                  quote(gcsModel),
                  quote(mcsModel), 
+                 quote(climateVariablesForGMCS),
                  quote(climateYear)),
   params = list(
     .globals = list(
@@ -91,8 +96,7 @@ inSim <- SpaDES.project::setupProject(
       minMeasures = 2,
       minDBH = 9, #7 for BC, 9 for many places. min DBH is all over the place, sometimes 0, sometimes 9
       # depending on jurisdiction, place, and year. 9 is defensible as a cut-off but we lose info about young plots. 
-      PSPperiod = c(1950, 2020), 
-      climateVariables = climateVarsForGMCS
+      PSPperiod = c(1950, 2020)
     ), 
     Biomass_core = list(
       growthAndMortalityDrivers = "LandR.CS"
