@@ -67,16 +67,16 @@ inSim <- SpaDES.project::setupProject(
     sppEquiv <- LandR::sppEquivalencies_CA[LandR %in% species$speciesList,]
     sppEquiv[LANDIS_traits != "",] #Popu bal and popu tre are just "aspen"
   },
-  climateVariables = c(makeClimateVariablesForModule(unname(climateVarsForGMCS), type= "projected", years = 2020:2050),
-                       makeClimateVariablesForModule(unname(climateVarsForGMCS), type = "historical", 
+  climateVariablesForGMCS = c("a_MAT" = "MAT", "a_MAP" = "MAP", 
+                              #"a_MSP" = "MSP", #"a_FFP" = "FFP"
+                              "a_DD5" = "DD5", "aDD_0" = "DD_0", 
+                              "a_CMI" = "CMI", "a_AHM" = "AHM"),
+  climateVariables = c(makeClimateVariablesForModule(unname(climateVariablesForGMCS), type= "projected", years = 2020:2050),
+                       makeClimateVariablesForModule(unname(climateVariablesForGMCS), type = "historical", 
                                                      years = "1951_1980", yearType = "historical_period")
                        # below was to confirm if things were working for Alex?
                        # , makeClimateVariablesForModule(unname(climateVarsForGMCS), type = "hindcast", years = 2021:2023)
-                       ), 
-  climateVariablesForGMCS = climateVarsForGMCS <- c("a_MAT" = "MAT", "a_MAP" = "MAP", 
-                                                    #"a_MSP" = "MSP", #"a_FFP" = "FFP"
-                                                    "a_DD5" = "DD5", "aDD_0" = "DD_0", 
-                                                    "a_CMI" = "CMI", "a_AHM" = "AHM"),
+  ), 
   cceArgs = list(quote(projectedClimateRasters),
                  quote(historicalClimateRasters),#need for normals 
                  quote(gcsModel),
@@ -90,7 +90,7 @@ inSim <- SpaDES.project::setupProject(
       sppEquivCol = "LandR", # will get a warning if this is not here
       .useCache = c(".inputObjects"),
       .studyAreaName = paste0(ecodistrictName,ecodistrictNumber, "_2020")
-      ), 
+    ), 
     gmcsDataPrep = list(
       minTrees = 15,
       minMeasures = 2,
@@ -99,36 +99,14 @@ inSim <- SpaDES.project::setupProject(
       PSPperiod = c(1950, 2020)
     ), 
     Biomass_core = list(
-      growthAndMortalityDrivers = "LandR.CS"
+      growthAndMortalityDrivers = "LandR.CS", 
+      gmcsGrowthLimits = c(33,300),
+      gmcsMortLimits = c(33, 300)
+      
     )
   )
 )
 
-pkgload::load_all("modules/gmcsDataPrep/pkgs/caret/pkg/caret") 
 pkgload::load_all("../LandR.CS")
-stopifnot(packageVersion("caret") == "7.0.2.9001")
-
+pkgload::load_all("pkgs/caret/pkg/caret")
 out <- SpaDES.core::simInitAndSpades2(inSim)
-
-#
-#TODO:
-# once biomass is estimated, we actually stop caring about `newSpeciesName`. In fact we should only use Species at that point. 
-# Species will be the new sppEquivCol. This is how it must be. 
-
-
-# elev <- reproducible::prepInputs(url = 'https://drive.google.com/file/d/14puAtns8oTZDtvWzpQ6_FgK4MbozGZFK/', 
-#                    to = inSim$rasterToMatch, destinationPath = "inputs", overwrite = TRUE,
-#                    writeTo = paste0(ecodistrictNumber, "_DEM.tif"))
-# 
-# bb <- climr::get_bb(xyz = elev)
-# climr::pre_cache(bbox = bb)
-# normalData <- climr::downscale(xyz = elev, db_option = "local", 
-#                                vars = unname(climateVarsForGMCS), nthread = 6, 
-#                                return_refperiod = TRUE, ensemble_mean = TRUE)
-# Sys.time(projectedClimate <- climr::downscale(xyz = elev, db_option = "local", 
-#                                      vars = unname(climateVarsForGMCS), 
-#                                      nthread = 6,
-#                                      gcms = climr::list_gmcs()[4], #the recommended ensemble: [1,4:7, 10:12]
-#                                      ssps = "ssp370", max_run = 0, return_refperiod = TRUE, 
-# gcm_spp_years = 2020:2050))
-Sys.time()#started around 420 pm
