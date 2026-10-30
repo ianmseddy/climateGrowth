@@ -1,8 +1,8 @@
 repos <- c("https://predictiveecology.r-universe.dev", getOption("repos"))
 source("https://raw.githubusercontent.com/PredictiveEcology/pemisc/refs/heads/development/R/getOrUpdatePkg.R")
 
-# getOrUpdatePkg(c("Require", "SpaDES.project"), c("1.0.1.9003", "0.1.1.9037")) # only install/update if required
-# getOrUpdatePkg(c("reproducible", "SpaDES.core"), c("21.2.99999", "2.1.8.9999"))
+getOrUpdatePkg(c("Require", "SpaDES.project"), c("1.0.1.9003", "0.1.1.9037")) # only install/update if required
+getOrUpdatePkg(c("reproducible", "SpaDES.core"), c("21.2.99999", "2.1.8.9999"))
 # generic absolute path for anybody; but individual can change
 projectDir <- getwd()
 
@@ -22,7 +22,7 @@ ecoName <- ecoprovinceName
 ecoNumber <- ecoprovinceNumber
 ecoField <- "ECOPROVINC"
 ecoUrl <- ecoprovinceUrl
-#these are kept in by LandR::sppInStudyArea but are inconsequential in the Columbia
+#these are kept in by LandR::sppInStudyArea but are inconsequential in the Columbia study area
 sppToDrop <- c("Abie_ama", "Tsug_mer", "Alnu_rub", "Lari_lar", "Pice_sit")
 
 #TODO: pass normal 
@@ -37,15 +37,11 @@ inSim <- SpaDES.project::setupProject(
     "PredictiveEcology/SpaDES.core", 
     "terra" # "leaflet", "tidyterra",
   ), # for StudyArea visualization below
-  require = c("usethis"),
+  require = c("usethis", "ianmseddy/LandR.CS@development (>= 2.0.0.9005)"),
   useGit = "ianmseddy",
-  times = list(start = 2020, end = 2050),
+  times = list(start = 2020, end = 2040),
   options = list(
-    # gargle_oauth_email = "predictiveecology@gmail.com",
     "~/googledriveAuthentication.R", # has the above lines; each user can create their own file
-    # spades.allowInitDuringSimInit = FALSE, 
-    LandR.CS.debug = TRUE, 
-    LandR.CS.logPath = file.path("outputs/LandR.CS", paste(ecoName, ecoNumber, sep = "_")),
     repos = unique(c("predictiveecology.r-universe.dev", 'https://dmlc.r-universe.dev', getOption("repos"))),
     spades.moduleCodeChecks = FALSE,
     Require.cloneFrom = Sys.getenv("R_LIBS_USER"),
@@ -53,9 +49,9 @@ inSim <- SpaDES.project::setupProject(
     reproducible.inputPaths = "~/data"
   ),
   functions = "R/makeClimateVariablesForModule.R",
-  modules = c("ianmseddy/gmcsDataPrep@xgboost", 
+  modules = c("ianmseddy/gmcsDataPrep@development", 
               "PredictiveEcology/Biomass_borealDataPrep@development", 
-              "PredictiveEcology/Biomass_core@development", 
+              "PredictiveEcology/Biomass_core@gmcs", 
               "PredictiveEcology/canClimateData@development",
               "PredictiveEcology/climateYear@development"),
   studyArea = {
@@ -87,10 +83,10 @@ inSim <- SpaDES.project::setupProject(
     sppEquiv <- sppEquiv[!LandR %in% sppToDrop]
   },
   climateVariablesForGMCS = c("a_MAT" = "MAT", "a_CMI" = "CMI", #strong support for inclusion - e.g Luo and Chen
-                              "aMAP = MAP", #weak correlation with other variables, so include (only 0.66 with summer precip.)
+                              "aMAP" = "MAP", #weak correlation with other variables, so include (only 0.66 with summer precip.)
                               # "a_MSP" = "MSP", #"a_FFP" = "FFP" #summer precip, frost-free period,
                               # "a_AHM" = "AHM", 
-                              "aPPT_sm" = "PPT_sm", #the second precip is redudant
+                              #apparently seasonal normals aren't available :( might be fixed soon
                               "a_DD5" = "DD5", "aDD_0" = "DD_0", #
                               "a_SHM" = "SHM"),
   #dropped summer precip, frost-free period, summer precip (may-sep), and summer moisture index
@@ -98,10 +94,7 @@ inSim <- SpaDES.project::setupProject(
   climateVariables = c(makeClimateVariablesForModule(unname(climateVariablesForGMCS), type= "projected", years = 2020:2100),
                        makeClimateVariablesForModule(unname(climateVariablesForGMCS), type = "historical", 
                                                      years = "1991_2020", yearType = "historical_period")
-                       # below was to confirm if things were working for Alex?
-                       # , makeClimateVariablesForModule(unname(climateVarsForGMCS), type = "hindcast", years = 2021:2023)
   ), 
-  debugGMCS = TRUE,
   cceArgs = list(quote(historicalClimateRasters),#need for normals 
                  quote(gcsModel),
                  quote(mcsModel), 
@@ -116,22 +109,22 @@ inSim <- SpaDES.project::setupProject(
       .studyAreaName = paste0(ecoName,ecoNumber, "_2020")
     ), 
     gmcsDataPrep = list(
-      minTrees = 15,
+      minTrees = 10,
       minMeasures = 2,
-      QCflag = c(1,2), #J's new param
-      PSPdataTypes = c("BC", "AB"), #don't touch the NFI
-      minDBH = 9, #7 for BC, 9 for many places. min DBH is all over the place, sometimes 0, sometimes 9
+      QCaction = c(2), 
+      minDBH = 9.1, #7 for BC, 9 for many places. min DBH is all over the place, sometimes 0, sometimes 9
       # depending on jurisdiction, place, and year. 9 is defensible as a cut-off but we lose info about young plots. 
-      PSPperiod = c(1950, 2020)
+      PSPperiod = c(1950, 2020), 
     ), 
     Biomass_core = list(
       growthAndMortalityDrivers = "LandR.CS", 
       gmcsGrowthLimits = c(33,300)
-      
     )
   )
 )
 
-# pkgload::load_all("../climateData") #alternatively require normalfix branch
+#clone Ceres' git repository caret into your project
 pkgload::load_all("pkgs/caret/pkg/caret")
-out <- SpaDES.core::simInitAndSpades2(inSim)
+
+
+outSim <- SpaDES.core::simInitAndSpades2(inSim)
