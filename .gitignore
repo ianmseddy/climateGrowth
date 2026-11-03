@@ -13,3 +13,4 @@ outputs
 .DS_Store
 .quarto
 pkgs/
+.posit/assistant/settings.json*
