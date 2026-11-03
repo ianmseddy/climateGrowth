@@ -13,3 +13,6 @@
 [submodule "modules/climateYear"]
 	path = modules/climateYear
 	url = https://github.com/PredictiveEcology/climateYear
+[submodule "modules/gmcsSummary"]
+	path = modules/gmcsSummary
+	url = https://github.com/PredictiveEcology/gmcsSummary
