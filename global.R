@@ -11,17 +11,20 @@ ecodistrictName <- "Bowron_Valley" #for studyArea
 ecodistrictNumber <- 986
 ecoprovinceNumber <- "14.1"
 ecoprovinceName <- "Columbia_Montane"
+ecoregionNumber <- 207 # Eastern Continental Ranges (~39,000 km2); small enough for quick test runs
+ecoregionName <- "Eastern_Continental_Ranges"
 climateNormal <- 1981:2010 
 # climateNormal should correspond to the age of the data used for simulation
 ecoprovinceUrl <- "https://sis.agr.gc.ca/cansis/nsdb/ecostrat/province/ecoprovince_shp.zip"
 ecodistrictUrl <- "https://sis.agr.gc.ca/cansis/nsdb/ecostrat/ecodistrct/ecodistrct_shp.zip"
+ecoregionUrl <- "https://sis.agr.gc.ca/cansis/nsdb/ecostrat/region/ecoregion_shp.zip"
 
 
 #TODO: make function that switches between ecoprovince and ecodistrict - this is annoying
-ecoName <- ecoprovinceName
-ecoNumber <- ecoprovinceNumber
-ecoField <- "ECOPROVINC"
-ecoUrl <- ecoprovinceUrl
+ecoName <- ecoregionName
+ecoNumber <- ecoregionNumber
+ecoField <- "ECOREGION"
+ecoUrl <- ecoregionUrl
 #these are kept in by LandR::sppInStudyArea but are inconsequential in the Columbia study area
 sppToDrop <- c("Abie_ama", "Tsug_mer", "Alnu_rub", "Lari_lar", "Pice_sit")
 
@@ -34,7 +37,7 @@ inSim <- SpaDES.project::setupProject(
                cachePath = "cache"),
   packages = c(
     "PredictiveEcology/reproducible", 
-    "PredictiveEcology/SpaDES.core", 
+    "PredictiveEcology/SpaDES.core@development", 
     "terra" # "leaflet", "tidyterra",
   ), # for StudyArea visualization below
   require = c("usethis", "ianmseddy/LandR.CS@development (>= 2.0.0.9005)"),
@@ -53,7 +56,8 @@ inSim <- SpaDES.project::setupProject(
               "PredictiveEcology/Biomass_borealDataPrep@development", 
               "PredictiveEcology/Biomass_core@gmcs", 
               "PredictiveEcology/canClimateData@development",
-              "PredictiveEcology/climateYear@development"),
+              "PredictiveEcology/climateYear@development",
+              "PredictiveEcology/gmcsSummary"),
   studyArea = {
     sa <- reproducible::prepInputs(url = ecoUrl, 
                                    destinationPath = paths$inputPath, 
@@ -66,7 +70,7 @@ inSim <- SpaDES.project::setupProject(
     return(sa)
   },  
   rasterToMatch = {
-    rtm <- terra::rast(sa, res = c(250, 250), vals = 1) |>
+    rtm <- terra::rast(sa, res = c(240, 240), vals = 1) |>
       reproducible::postProcess(maskTo = sa)
   },
   studyAreaPSP = {
@@ -114,7 +118,7 @@ inSim <- SpaDES.project::setupProject(
       QCaction = c(2), 
       minDBH = 9.1, #7 for BC, 9 for many places. min DBH is all over the place, sometimes 0, sometimes 9
       # depending on jurisdiction, place, and year. 9 is defensible as a cut-off but we lose info about young plots. 
-      PSPperiod = c(1950, 2020), 
+      PSPperiod = c(1950, 2020)
     ), 
     Biomass_core = list(
       growthAndMortalityDrivers = "LandR.CS", 
@@ -122,9 +126,6 @@ inSim <- SpaDES.project::setupProject(
     )
   )
 )
-
-#clone Ceres' git repository caret into your project
-pkgload::load_all("pkgs/caret/pkg/caret")
 
 
 outSim <- SpaDES.core::simInitAndSpades2(inSim)
